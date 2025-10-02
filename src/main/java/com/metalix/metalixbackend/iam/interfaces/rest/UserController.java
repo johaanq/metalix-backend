@@ -29,7 +29,21 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Get all users")
-    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sort,
+            @RequestParam(defaultValue = "asc") String direction) {
+        
+        // Create Pageable with proper sort handling
+        org.springframework.data.domain.Sort sortObj = org.springframework.data.domain.Sort.by(
+            direction.equalsIgnoreCase("desc") ? 
+                org.springframework.data.domain.Sort.Direction.DESC : 
+                org.springframework.data.domain.Sort.Direction.ASC, 
+            sort
+        );
+        
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sortObj);
         Page<User> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users.map(UserResponse::fromEntity));
     }

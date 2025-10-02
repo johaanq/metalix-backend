@@ -28,7 +28,7 @@ INSERT INTO users (email, password, first_name, last_name, role, municipality_id
 VALUES 
 ('admin@metalix.com', '$2a$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'Admin', 'Sistema', 'SYSTEM_ADMIN', 1, '+51-999-888-777', 'Av. Principal 123', 'Lima', '15001', true, 'ADMIN001', 0, NOW(), NOW()),
 ('admin.lima@metalix.com', '$2a$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'Carlos', 'Rodríguez', 'MUNICIPALITY_ADMIN', 1, '+51-999-777-666', 'Av. Municipal 456', 'Lima', '15001', true, 'MLIMA001', 0, NOW(), NOW()),
-('maria.lopez@email.com', '$2aimage.png$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'María', 'López', 'CITIZEN', 1, '+51-999-555-444', 'Jr. Las Flores 234', 'Lima', '15001', true, 'RFID001', 150, NOW(), NOW()),
+('maria.lopez@email.com', '$2a$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'María', 'López', 'CITIZEN', 1, '+51-999-555-444', 'Jr. Las Flores 234', 'Lima', '15001', true, 'RFID001', 150, NOW(), NOW()),
 ('jose.perez@email.com', '$2a$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'José', 'Pérez', 'CITIZEN', 1, '+51-999-444-333', 'Av. Los Incas 567', 'Lima', '15001', true, 'RFID002', 320, NOW(), NOW()),
 ('ana.torres@email.com', '$2a$10$xZV/6x5kQO8nFzAUvwKAa.iB7ZqJWZH5E2vMaZmPvYvJzQq7XfNjO', 'Ana', 'Torres', 'CITIZEN', 2, '+51-999-333-222', 'Calle Arequipa 890', 'Arequipa', '04001', true, 'RFID003', 200, NOW(), NOW());
 
