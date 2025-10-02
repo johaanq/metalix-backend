@@ -2,6 +2,7 @@ package com.metalix.metalixbackend.reward.interfaces.rest;
 
 import com.metalix.metalixbackend.reward.application.services.RewardService;
 import com.metalix.metalixbackend.reward.domain.model.aggregates.Reward;
+import com.metalix.metalixbackend.reward.interfaces.rest.dto.CreateRewardRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,9 +57,9 @@ public class RewardController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Create reward")
-    public ResponseEntity<Reward> createReward(@Valid @RequestBody Reward reward) {
+    public ResponseEntity<Reward> createReward(@Valid @RequestBody CreateRewardRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(rewardService.createReward(reward));
+                .body(rewardService.createReward(request));
     }
     
     @PutMapping("/{id}")

@@ -2,6 +2,7 @@ package com.metalix.metalixbackend.municipality.application.services;
 
 import com.metalix.metalixbackend.municipality.domain.model.aggregates.Municipality;
 import com.metalix.metalixbackend.municipality.domain.repository.MunicipalityRepository;
+import com.metalix.metalixbackend.municipality.interfaces.rest.dto.CreateMunicipalityRequest;
 import com.metalix.metalixbackend.municipality.interfaces.rest.dto.DashboardDataResponse;
 import com.metalix.metalixbackend.municipality.interfaces.rest.dto.MunicipalityStatsResponse;
 import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
@@ -47,10 +48,21 @@ public class MunicipalityService {
     }
     
     @Transactional
-    public Municipality createMunicipality(Municipality municipality) {
-        if (municipalityRepository.existsByCode(municipality.getCode())) {
-            throw new ValidationException("Municipality with code " + municipality.getCode() + " already exists");
+    public Municipality createMunicipality(CreateMunicipalityRequest request) {
+        if (municipalityRepository.existsByCode(request.getCode())) {
+            throw new ValidationException("Municipality with code " + request.getCode() + " already exists");
         }
+        
+        Municipality municipality = new Municipality();
+        municipality.setName(request.getName());
+        municipality.setCode(request.getCode());
+        municipality.setRegion(request.getRegion());
+        municipality.setPopulation(request.getPopulation());
+        municipality.setArea(request.getArea());
+        municipality.setContactEmail(request.getEmail());
+        municipality.setContactPhone(request.getPhone());
+        municipality.setIsActive(true);
+        
         return municipalityRepository.save(municipality);
     }
     

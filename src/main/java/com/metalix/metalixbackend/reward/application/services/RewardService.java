@@ -3,6 +3,7 @@ package com.metalix.metalixbackend.reward.application.services;
 import com.metalix.metalixbackend.reward.domain.model.aggregates.Reward;
 import com.metalix.metalixbackend.reward.domain.model.valueobjects.RewardCategory;
 import com.metalix.metalixbackend.reward.domain.repository.RewardRepository;
+import com.metalix.metalixbackend.reward.interfaces.rest.dto.CreateRewardRequest;
 import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
 import com.metalix.metalixbackend.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,19 @@ public class RewardService {
     }
     
     @Transactional
-    public Reward createReward(Reward reward) {
+    public Reward createReward(CreateRewardRequest request) {
+        Reward reward = new Reward();
+        reward.setName(request.getName());
+        reward.setDescription(request.getDescription());
+        reward.setPointsCost(request.getPointsCost());
+        reward.setCategory(request.getCategory());
+        reward.setAvailability(request.getAvailability());
+        reward.setMunicipalityId(request.getMunicipalityId());
+        reward.setImageUrl(request.getImageUrl());
+        reward.setExpirationDate(request.getExpirationDate());
+        reward.setTermsAndConditions(request.getTermsAndConditions());
+        reward.setIsActive(true);
+        
         return rewardRepository.save(reward);
     }
     

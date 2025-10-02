@@ -2,6 +2,7 @@ package com.metalix.metalixbackend.wastecollection.interfaces.rest;
 
 import com.metalix.metalixbackend.wastecollection.application.services.WasteCollectorService;
 import com.metalix.metalixbackend.wastecollection.domain.model.aggregates.WasteCollector;
+import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.CreateWasteCollectorRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,9 +57,9 @@ public class WasteCollectorController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Create waste collector")
-    public ResponseEntity<WasteCollector> createCollector(@Valid @RequestBody WasteCollector collector) {
+    public ResponseEntity<WasteCollector> createCollector(@Valid @RequestBody CreateWasteCollectorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(wasteCollectorService.createCollector(collector));
+                .body(wasteCollectorService.createCollector(request));
     }
     
     @PutMapping("/{id}")

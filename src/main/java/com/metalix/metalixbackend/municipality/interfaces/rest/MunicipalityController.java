@@ -3,6 +3,7 @@ package com.metalix.metalixbackend.municipality.interfaces.rest;
 import com.metalix.metalixbackend.municipality.application.services.MunicipalityService;
 import com.metalix.metalixbackend.municipality.domain.model.aggregates.Municipality;
 import com.metalix.metalixbackend.municipality.interfaces.rest.dto.MunicipalityResponse;
+import com.metalix.metalixbackend.municipality.interfaces.rest.dto.CreateMunicipalityRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,8 +52,8 @@ public class MunicipalityController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Create municipality")
-    public ResponseEntity<MunicipalityResponse> createMunicipality(@Valid @RequestBody Municipality municipality) {
-        Municipality created = municipalityService.createMunicipality(municipality);
+    public ResponseEntity<MunicipalityResponse> createMunicipality(@Valid @RequestBody CreateMunicipalityRequest request) {
+        Municipality created = municipalityService.createMunicipality(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(MunicipalityResponse.fromEntity(created));
     }

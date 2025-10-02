@@ -4,6 +4,7 @@ import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
 import com.metalix.metalixbackend.wastecollection.domain.model.aggregates.WasteCollector;
 import com.metalix.metalixbackend.wastecollection.domain.model.valueobjects.CollectorStatus;
 import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollectorRepository;
+import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.CreateWasteCollectorRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,18 @@ public class WasteCollectorService {
     }
     
     @Transactional
-    public WasteCollector createCollector(WasteCollector collector) {
+    public WasteCollector createCollector(CreateWasteCollectorRequest request) {
+        WasteCollector collector = new WasteCollector();
+        collector.setName(request.getName());
+        collector.setType(request.getType());
+        collector.setLocation(request.getLocation());
+        collector.setMunicipalityId(request.getMunicipalityId());
+        collector.setZoneId(request.getZoneId());
+        collector.setCapacity(request.getCapacity());
+        collector.setSensorId(request.getSensorId());
+        collector.setCurrentFill(0.0);
+        collector.setStatus(CollectorStatus.ACTIVE);
+        
         return wasteCollectorRepository.save(collector);
     }
     
