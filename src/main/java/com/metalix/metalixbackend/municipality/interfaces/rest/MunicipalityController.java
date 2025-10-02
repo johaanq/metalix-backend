@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/municipalities")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Municipalities", description = "Municipality management endpoints")
 public class MunicipalityController {
     
@@ -51,6 +50,7 @@ public class MunicipalityController {
     
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Create municipality")
     public ResponseEntity<MunicipalityResponse> createMunicipality(@Valid @RequestBody CreateMunicipalityRequest request) {
         Municipality created = municipalityService.createMunicipality(request);
@@ -60,6 +60,7 @@ public class MunicipalityController {
     
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Update municipality")
     public ResponseEntity<MunicipalityResponse> updateMunicipality(
             @PathVariable Long id,
@@ -71,6 +72,7 @@ public class MunicipalityController {
     
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Delete municipality")
     public ResponseEntity<Void> deleteMunicipality(@PathVariable Long id) {
         municipalityService.deleteMunicipality(id);
