@@ -65,10 +65,35 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        
+        // Permitir orígenes específicos (no se puede usar * con credentials true)
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:4200",
+                "http://localhost:*",
+                "https://*.vercel.app",
+                "https://metalix-frontend.vercel.app"
+        ));
+        
+        // Métodos HTTP permitidos
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
+        
+        // Headers permitidos
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
+        
+        // Headers que el cliente puede leer en la respuesta
+        configuration.setExposedHeaders(List.of("Authorization"));
+        
+        // Permitir credenciales (cookies, headers de autorización)
+        configuration.setAllowCredentials(true);
+        
+        // Cachear preflight requests por 1 hora
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
