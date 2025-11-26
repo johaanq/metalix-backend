@@ -151,40 +151,52 @@ public class MunicipalityService {
             treesEquivalent
         );
         
-        // Get recent unresolved alerts
-        List<DashboardDataResponse.AlertSummary> recentAlerts = jdbcTemplate.query(
-            "SELECT id, alert_type, severity, message, is_resolved, created_at " +
-            "FROM alerts WHERE municipality_id = ? AND is_resolved = false " +
-            "ORDER BY created_at DESC LIMIT 5",
-            (rs, rowNum) -> new DashboardDataResponse.AlertSummary(
-                rs.getLong("id"),
-                rs.getString("alert_type"),
-                rs.getString("severity"),
-                rs.getString("message"),
-                rs.getBoolean("is_resolved"),
-                rs.getTimestamp("created_at").toLocalDateTime()
-            ),
-            municipalityId
-        );
+        // Get recent unresolved alerts - handle errors gracefully
+        List<DashboardDataResponse.AlertSummary> recentAlerts = new ArrayList<>();
+        try {
+            recentAlerts = jdbcTemplate.query(
+                "SELECT id, alert_type, severity, message, is_resolved, created_at " +
+                "FROM alerts WHERE municipality_id = ? AND is_resolved = false " +
+                "ORDER BY created_at DESC LIMIT 5",
+                (rs, rowNum) -> new DashboardDataResponse.AlertSummary(
+                    rs.getLong("id"),
+                    rs.getString("alert_type"),
+                    rs.getString("severity"),
+                    rs.getString("message"),
+                    rs.getBoolean("is_resolved"),
+                    rs.getTimestamp("created_at").toLocalDateTime()
+                ),
+                municipalityId
+            );
+        } catch (Exception e) {
+            // If alerts table doesn't exist or query fails, return empty list
+            recentAlerts = new ArrayList<>();
+        }
         
-        // Get top collectors by weight
-        List<DashboardDataResponse.TopCollector> topCollectors = jdbcTemplate.query(
-            "SELECT wc.id, wc.name, " +
-            "COUNT(wcol.id) as collections, " +
-            "COALESCE(SUM(wcol.weight), 0) as weight " +
-            "FROM waste_collectors wc " +
-            "LEFT JOIN waste_collections wcol ON wc.id = wcol.collector_id " +
-            "WHERE wc.municipality_id = ? " +
-            "GROUP BY wc.id, wc.name " +
-            "ORDER BY weight DESC LIMIT 5",
-            (rs, rowNum) -> new DashboardDataResponse.TopCollector(
-                rs.getLong("id"),
-                rs.getString("name"),
-                rs.getInt("collections"),
-                rs.getDouble("weight")
-            ),
-            municipalityId
-        );
+        // Get top collectors by weight - handle errors gracefully
+        List<DashboardDataResponse.TopCollector> topCollectors = new ArrayList<>();
+        try {
+            topCollectors = jdbcTemplate.query(
+                "SELECT wc.id, wc.name, " +
+                "COUNT(wcol.id) as collections, " +
+                "COALESCE(SUM(wcol.weight), 0) as weight " +
+                "FROM waste_collectors wc " +
+                "LEFT JOIN waste_collections wcol ON wc.id = wcol.collector_id " +
+                "WHERE wc.municipality_id = ? " +
+                "GROUP BY wc.id, wc.name " +
+                "ORDER BY weight DESC LIMIT 5",
+                (rs, rowNum) -> new DashboardDataResponse.TopCollector(
+                    rs.getLong("id"),
+                    rs.getString("name"),
+                    rs.getInt("collections"),
+                    rs.getDouble("weight")
+                ),
+                municipalityId
+            );
+        } catch (Exception e) {
+            // If query fails, return empty list
+            topCollectors = new ArrayList<>();
+        }
         
         return new DashboardDataResponse(
             municipalityId,

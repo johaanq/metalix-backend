@@ -108,12 +108,24 @@ public class UserService {
             Double.class, userId
         );
         
-        // Get last activity
-        LocalDateTime lastActivity = jdbcTemplate.query(
-            "SELECT MAX(timestamp) as last_activity FROM waste_collections WHERE user_id = ?",
-            rs -> rs.next() ? rs.getTimestamp("last_activity").toLocalDateTime() : null,
-            userId
-        );
+        // Get last activity - handle null case
+        LocalDateTime lastActivity = null;
+        try {
+            lastActivity = jdbcTemplate.query(
+                "SELECT MAX(timestamp) as last_activity FROM waste_collections WHERE user_id = ?",
+                rs -> {
+                    if (rs.next()) {
+                        java.sql.Timestamp timestamp = rs.getTimestamp("last_activity");
+                        return timestamp != null ? timestamp.toLocalDateTime() : null;
+                    }
+                    return null;
+                },
+                userId
+            );
+        } catch (Exception e) {
+            // If query fails or no data, lastActivity remains null
+            lastActivity = null;
+        }
         
         return UserProfileResponse.fromEntity(user, totalCollections, totalWeight, lastActivity);
     }

@@ -1,6 +1,7 @@
 package com.metalix.metalixbackend.wastecollection.application.services;
 
 import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
+import com.metalix.metalixbackend.shared.exception.ValidationException;
 import com.metalix.metalixbackend.wastecollection.domain.model.aggregates.WasteCollector;
 import com.metalix.metalixbackend.wastecollection.domain.model.valueobjects.CollectorStatus;
 import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollectorRepository;
@@ -46,8 +47,15 @@ public class WasteCollectorService {
     public WasteCollector createCollector(CreateWasteCollectorRequest request) {
         WasteCollector collector = new WasteCollector();
         collector.setName(request.getName());
-        collector.setType(request.getType());
-        collector.setLocation(request.getLocation());
+        collector.setType(request.getTypeOrDefault());
+        
+        // Handle location - can be String or object
+        String locationStr = request.getLocationString();
+        if (locationStr == null || locationStr.isEmpty()) {
+            throw new ValidationException("Location is required");
+        }
+        collector.setLocation(locationStr);
+        
         collector.setMunicipalityId(request.getMunicipalityId());
         collector.setZoneId(request.getZoneId());
         collector.setCapacity(request.getCapacity());
