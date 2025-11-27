@@ -344,7 +344,8 @@ public class DataSeeder {
     }
 
     private List<RfidCard> createRfidCards(List<User> users) {
-        List<RfidCard> cards = new ArrayList<>();
+        List<RfidCard> cardsToCreate = new ArrayList<>();
+        List<User> usersToUpdate = new ArrayList<>();
 
         // Asignar tarjetas RFID a ciudadanos (primeros 15)
         List<User> citizens = users.stream()
@@ -352,23 +353,68 @@ public class DataSeeder {
                 .limit(15)
                 .toList();
 
+        log.info("Checking RFID cards for {} citizens", citizens.size());
+
         for (int i = 0; i < citizens.size(); i++) {
             User user = citizens.get(i);
+            String cardNumber = "RFID" + String.format("%08d", 10000000 + i);
+            
+            // Verificar si el usuario ya tiene una tarjeta asignada
+            if (rfidCardRepository.findByUserId(user.getId()).isPresent()) {
+                log.debug("User {} already has an RFID card assigned", user.getId());
+                continue;
+            }
+            
+            // Verificar si la tarjeta ya existe
+            if (rfidCardRepository.existsByCardNumber(cardNumber)) {
+                log.debug("RFID card {} already exists", cardNumber);
+                // Si la tarjeta existe pero no está asignada a este usuario, asignarla
+                RfidCard existingCard = rfidCardRepository.findByCardNumber(cardNumber).orElse(null);
+                if (existingCard != null && existingCard.getUserId() == null) {
+                    existingCard.setUserId(user.getId());
+                    rfidCardRepository.save(existingCard);
+                    user.setRfidCard(cardNumber);
+                    usersToUpdate.add(user);
+                }
+                continue;
+            }
+            
+            // Crear nueva tarjeta
             RfidCard card = new RfidCard();
-            card.setCardNumber("RFID" + String.format("%08d", 10000000 + i));
+            card.setCardNumber(cardNumber);
             card.setUserId(user.getId());
             card.setStatus(CardStatus.ACTIVE);
             card.setIssuedDate(LocalDate.now().minusDays(random.nextInt(365)));
             card.setExpirationDate(LocalDate.now().plusYears(2));
             card.setLastUsed(LocalDateTime.now().minusDays(random.nextInt(30)));
-            cards.add(card);
+            cardsToCreate.add(card);
 
             // Actualizar el usuario con el número de tarjeta
-            user.setRfidCard(card.getCardNumber());
+            user.setRfidCard(cardNumber);
+            usersToUpdate.add(user);
         }
 
-        userRepository.saveAll(citizens);
-        return rfidCardRepository.saveAll(cards);
+        log.info("RFID cards to create: {}", cardsToCreate.size());
+
+        // Guardar usuarios actualizados
+        if (!usersToUpdate.isEmpty()) {
+            userRepository.saveAll(usersToUpdate);
+        }
+
+        if (cardsToCreate.isEmpty()) {
+            log.info("All RFID cards already exist, returning existing cards.");
+            return rfidCardRepository.findAll();
+        }
+
+        try {
+            List<RfidCard> savedCards = rfidCardRepository.saveAll(cardsToCreate);
+            log.info("Successfully created {} RFID cards", savedCards.size());
+            return rfidCardRepository.findAll(); // Retornar todas las tarjetas (nuevas + existentes)
+        } catch (Exception e) {
+            log.error("Error creating RFID cards: {}", e.getMessage(), e);
+            // Si hay error, retornar las existentes en lugar de fallar
+            return rfidCardRepository.findAll();
+        }
     }
 
     private List<WasteCollector> createWasteCollectors(List<Municipality> municipalities, List<Zone> zones) {
