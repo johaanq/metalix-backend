@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
@@ -53,6 +54,8 @@ public class SecurityConfiguration {
                                 "/actuator/**",
                                 "/actuator/health/**"
                         ).permitAll()
+                        // Permitir OPTIONS requests (preflight) sin autenticación
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -68,30 +71,33 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Permitir orígenes específicos (no se puede usar * con credentials true)
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:4200",
-                "http://localhost:*",
-                "https://*.vercel.app",
-                "https://metalix-frontend.vercel.app"
-        ));
+        // Permitir todos los orígenes usando patrones
+        // Esto permite cualquier dominio, incluyendo localhost y Vercel
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
-        // Métodos HTTP permitidos
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        // Métodos HTTP permitidos (incluyendo OPTIONS para preflight)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         
-        // Headers permitidos
+        // Headers permitidos (incluyendo todos los necesarios para CORS)
         configuration.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
                 "Accept",
                 "Origin",
-                "X-Requested-With"
+                "X-Requested-With",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
         ));
         
         // Headers que el cliente puede leer en la respuesta
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(List.of(
+                "Authorization",
+                "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"
+        ));
         
         // Permitir credenciales (cookies, headers de autorización)
+        // Nota: Con setAllowedOriginPatterns("*") podemos usar allowCredentials(true)
         configuration.setAllowCredentials(true);
         
         // Cachear preflight requests por 1 hora
