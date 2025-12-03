@@ -1,5 +1,6 @@
 package com.metalix.metalixbackend.wastecollection.interfaces.rest;
 
+import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
 import com.metalix.metalixbackend.wastecollection.application.services.IoTCollectionService;
 import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.IoTCollectionRequest;
 import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.IoTCollectionResponse;
