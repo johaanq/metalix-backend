@@ -28,7 +28,7 @@ public class UserController {
     
     @GetMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
-    @Operation(summary = "Get all users")
+    @Operation(summary = "Get all users with pagination")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "100") int size,
@@ -46,6 +46,16 @@ public class UserController {
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sortObj);
         Page<User> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users.map(UserResponse::fromEntity));
+    }
+    
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
+    @Operation(summary = "Get all users without pagination")
+    public ResponseEntity<List<UserResponse>> getAllUsersWithoutPagination() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users.stream()
+                .map(UserResponse::fromEntity)
+                .collect(Collectors.toList()));
     }
     
     @GetMapping("/{id}")
