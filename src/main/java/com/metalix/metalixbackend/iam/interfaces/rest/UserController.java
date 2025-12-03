@@ -30,10 +30,10 @@ public class UserController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Get all users")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort,
-            @RequestParam(defaultValue = "asc") String direction) {
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "100") int size,
+            @RequestParam(required = false, defaultValue = "id") String sort,
+            @RequestParam(required = false, defaultValue = "asc") String direction) {
         
         // Create Pageable with proper sort handling
         org.springframework.data.domain.Sort sortObj = org.springframework.data.domain.Sort.by(
@@ -66,8 +66,10 @@ public class UserController {
     @Operation(summary = "Get users by role")
     public ResponseEntity<Page<UserResponse>> getUsersByRole(
             @PathVariable Role role,
-            Pageable pageable
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "100") int size
     ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         Page<User> users = userService.getUsersByRole(role, pageable);
         return ResponseEntity.ok(users.map(UserResponse::fromEntity));
     }

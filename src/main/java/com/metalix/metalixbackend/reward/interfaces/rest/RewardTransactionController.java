@@ -41,8 +41,10 @@ public class RewardTransactionController {
     @Operation(summary = "Get transactions by user")
     public ResponseEntity<Page<RewardTransaction>> getTransactionsByUser(
             @PathVariable Long userId,
-            Pageable pageable
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "100") int size
     ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         return ResponseEntity.ok(transactionService.getTransactionsByUser(userId, pageable));
     }
     
