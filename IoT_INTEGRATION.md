@@ -1,31 +1,25 @@
 # Integración IoT - Metalix Backend
 
-## 📡 Flujo de 2 Pasos para Dispositivos IoT
+## 📡 Endpoint Simple para Dispositivos IoT
 
-### Proceso:
-1. **PASO 1:** Se pesa el material → se calculan puntos
-2. **PASO 2:** Usuario pasa su RFID → puntos y peso se asignan a su cuenta
+### POST `/api/v1/iot/collections/register`
 
----
-
-## 🔵 PASO 1: Pesar Material
-
-### POST `/api/v1/iot/collections/weigh`
-
-**Descripción:** Pesa el material y calcula los puntos (sin asignar a usuario aún).
+**Descripción:** Registra una colección de residuos y suma puntos/peso al bañista vinculado al RFID.
 
 **Tipo:** Endpoint PÚBLICO (no requiere autenticación)
 
-**URL:** `http://localhost:8081/api/v1/iot/collections/weigh`
+**URL:** `http://localhost:8081/api/v1/iot/collections/register`
 
-### Request Body
+---
+
+## 📋 Request Body
 
 ```json
 {
+  "rfidCardNumber": "RFID10000000",
   "weight": 5.5,
   "collectorId": 1,
-  "recyclableType": "PLASTIC",
-  "deviceId": "IOT-DEVICE-001"
+  "recyclableType": "PLASTIC"
 }
 ```
 
@@ -33,72 +27,32 @@
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
+| `rfidCardNumber` | string | ✅ Sí | Número de tarjeta RFID del bañista |
 | `weight` | number | ✅ Sí | Peso en kilogramos (debe ser positivo) |
 | `collectorId` | number | ✅ Sí | ID del contenedor/colector |
 | `recyclableType` | string | ✅ Sí | Tipo de material reciclable |
-| `deviceId` | string | ❌ No | ID del dispositivo IoT (opcional) |
 
 ### Tipos de Materiales Reciclables:
 
-- `PLASTIC` - Plástico (1.2x puntos)
-- `GLASS` - Vidrio (1.1x puntos)
-- `METAL` - Metal (1.5x puntos)
-- `PAPER` - Papel (1.0x puntos)
-- `ORGANIC` - Orgánico (0.8x puntos)
-- `ELECTRONIC` - Electrónico (2.0x puntos)
-- `HAZARDOUS` - Peligroso (2.5x puntos)
+| Tipo | Multiplicador | Descripción |
+|------|---------------|-------------|
+| `PLASTIC` | 1.2x | Plástico |
+| `GLASS` | 1.1x | Vidrio |
+| `METAL` | 1.5x | Metal |
+| `PAPER` | 1.0x | Papel |
+| `ORGANIC` | 0.8x | Orgánico |
+| `ELECTRONIC` | 2.0x | Electrónico |
+| `HAZARDOUS` | 2.5x | Peligroso |
 
-### Response Paso 1 (Éxito):
+---
+
+## ✅ Response (Éxito)
 
 **Status:** `201 Created`
 
 ```json
 {
-  "sessionToken": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "weight": 5.5,
-  "recyclableType": "PLASTIC",
-  "calculatedPoints": 66,
-  "message": "Material weighed successfully. 66 points ready to be assigned. Please scan your RFID card.",
-  "expiresInSeconds": 300
-}
-```
-
-**Importante:** Guardar el `sessionToken` para usarlo en el Paso 2.
-
----
-
-## 🟢 PASO 2: Confirmar con RFID
-
-### POST `/api/v1/iot/collections/confirm`
-
-**Descripción:** Usuario escanea su RFID y los puntos/peso se asignan a su cuenta.
-
-**Tipo:** Endpoint PÚBLICO (no requiere autenticación)
-
-**URL:** `http://localhost:8081/api/v1/iot/collections/confirm`
-
-### Request Body
-
-```json
-{
-  "sessionToken": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "rfidCardNumber": "RFID10000000"
-}
-```
-
-### Parámetros:
-
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| `sessionToken` | string | ✅ Sí | Token de sesión del Paso 1 |
-| `rfidCardNumber` | string | ✅ Sí | Número de tarjeta RFID del usuario |
-
-### Response Paso 2 (Éxito):
-
-**Status:** `200 OK`
-
-```json
-{
+  "success": true,
   "collectionId": 123,
   "userId": 7,
   "userEmail": "maría.lópez0@email.com",
@@ -108,30 +62,32 @@
   "totalUserPoints": 4507,
   "recyclableType": "PLASTIC",
   "timestamp": "2025-12-03T10:30:00",
-  "success": true,
-  "message": "Collection completed successfully! 66 points awarded to María López"
+  "message": "Collection completed! +66 points awarded to María. Total: 4507"
 }
 ```
 
 ---
 
-## ❌ Posibles Errores
+## ❌ Response (Error)
 
-**Paso 1 - Weigh:**
-| Error | Causa |
-|-------|-------|
-| `Waste Collector not found` | El contenedor no existe |
-| `Weight must be positive` | El peso debe ser mayor a 0 |
+**Status:** `400 Bad Request` o `404 Not Found`
 
-**Paso 2 - Confirm:**
-| Error | Causa |
-|-------|-------|
-| `Pending collection not found or expired` | Token inválido o sesión expirada (>5 min) |
-| `This collection has already been completed` | La colección ya fue confirmada |
-| `RFID Card not found` | La tarjeta RFID no existe |
-| `RFID Card is not valid or expired` | Tarjeta bloqueada o expirada |
-| `RFID Card is not linked to any user` | Tarjeta no asignada a ningún usuario |
-| `User account is not active` | Cuenta del usuario desactivada |
+```json
+{
+  "success": false,
+  "message": "Error: RFID Card not found: RFID99999999"
+}
+```
+
+### Posibles Errores:
+
+| Error | Status | Causa |
+|-------|--------|-------|
+| `RFID Card not found` | 404 | La tarjeta RFID no existe en el sistema |
+| `RFID Card is not valid or expired` | 400 | Tarjeta bloqueada o expirada |
+| `RFID Card is not linked to any user` | 400 | Tarjeta no vinculada a ningún usuario |
+| `User account is not active` | 400 | Cuenta del usuario desactivada |
+| `Waste Collector not found` | 404 | El contenedor no existe |
 
 ---
 
@@ -142,14 +98,46 @@
 puntos = peso × 10 × multiplicador_tipo
 ```
 
-**Ejemplo:**
-- Peso: 5.5 kg
-- Tipo: PLASTIC (multiplicador 1.2)
-- Cálculo: 5.5 × 10 × 1.2 = **66 puntos**
+**Ejemplos:**
+- 5.5 kg de PLASTIC: `5.5 × 10 × 1.2 = 66 puntos`
+- 3.0 kg de METAL: `3.0 × 10 × 1.5 = 45 puntos`
+- 2.0 kg de ELECTRONIC: `2.0 × 10 × 2.0 = 40 puntos`
 
 ---
 
-## 🔗 Vincular Tarjeta RFID a Usuario
+## 🚀 Flujo Completo
+
+1. **Bañista deposita material** en el contenedor IoT
+2. **Dispositivo pesa automáticamente** el material
+3. **Bañista selecciona tipo de material** en el dispositivo
+4. **Bañista escanea su tarjeta RFID**
+5. **Dispositivo envía POST** a `/api/v1/iot/collections/register` con:
+   - RFID card number
+   - Peso
+   - Tipo de material
+   - ID del contenedor
+6. **Backend procesa:**
+   - ✅ Valida RFID y usuario
+   - ✅ Calcula puntos según peso y tipo
+   - ✅ Suma puntos al total del bañista
+   - ✅ Registra peso en estadísticas
+   - ✅ Actualiza nivel de contenedor
+   - ✅ Marca último uso de RFID
+7. **Backend responde** con:
+   - Nombre del bañista
+   - Puntos ganados
+   - Total de puntos acumulados
+8. **Dispositivo muestra en pantalla:**
+   ```
+   ¡Bienvenido María López!
+   +66 puntos
+   Total: 4507 puntos
+   ¡Gracias por reciclar!
+   ```
+
+---
+
+## 🔗 Vincular Tarjeta RFID a Bañista
 
 ### POST `/api/v1/rfid-cards/assign`
 
@@ -162,6 +150,18 @@ puntos = peso × 10 × multiplicador_tipo
 }
 ```
 
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "cardNumber": "RFID10000000",
+  "userId": 7,
+  "status": "ACTIVE",
+  "issuedDate": "2025-12-01",
+  "expirationDate": "2027-12-01"
+}
+```
+
 ---
 
 ## 🧪 Ejemplo de Uso desde Arduino/ESP32
@@ -170,26 +170,31 @@ puntos = peso × 10 × multiplicador_tipo
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <MFRC522.h>  // Para lector RFID
+#include <HX711.h>    // Para balanza
 
-const char* serverUrl = "http://your-server:8081/api/v1/iot/collections";
-String sessionToken = "";
+const char* serverUrl = "http://your-server:8081/api/v1/iot/collections/register";
+const int collectorId = 1;
 
-// PASO 1: Pesar material
-void weighMaterial(float weight, int collectorId, String recyclableType) {
+// Función para registrar colección
+void registerCollection(String rfidCard, float weight, String recyclableType) {
   if(WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    http.begin(String(serverUrl) + "/weigh");
+    http.begin(serverUrl);
     http.addHeader("Content-Type", "application/json");
     
     // Crear JSON
     StaticJsonDocument<256> doc;
+    doc["rfidCardNumber"] = rfidCard;
     doc["weight"] = weight;
     doc["collectorId"] = collectorId;
     doc["recyclableType"] = recyclableType;
-    doc["deviceId"] = "IOT-001";
     
     String requestBody;
     serializeJson(doc, requestBody);
+    
+    Serial.println("Sending to backend...");
+    Serial.println(requestBody);
     
     // Enviar POST
     int httpResponseCode = http.POST(requestBody);
@@ -201,98 +206,96 @@ void weighMaterial(float weight, int collectorId, String recyclableType) {
       StaticJsonDocument<512> responseDoc;
       deserializeJson(responseDoc, response);
       
-      sessionToken = responseDoc["sessionToken"].as<String>();
-      int points = responseDoc["calculatedPoints"];
+      String userName = responseDoc["userName"];
+      int pointsEarned = responseDoc["pointsEarned"];
+      int totalPoints = responseDoc["totalUserPoints"];
       
-      Serial.printf("Material weighed: %.2f kg\\n", weight);
-      Serial.printf("Points calculated: %d\\n", points);
-      Serial.println("Waiting for RFID scan...");
+      // Mostrar en LCD o Serial
+      Serial.println("\n=== SUCCESS ===");
+      Serial.printf("Welcome %s!\n", userName.c_str());
+      Serial.printf("+%d points\n", pointsEarned);
+      Serial.printf("Total: %d points\n", totalPoints);
       
-      // Mostrar en LCD/Display
-      displayMessage("Weight: " + String(weight) + " kg");
-      displayMessage("Points: " + String(points));
-      displayMessage("Scan your RFID card");
+      // Mostrar en display LCD
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Welcome ");
+      lcd.print(userName);
+      lcd.setCursor(0, 1);
+      lcd.print("+");
+      lcd.print(pointsEarned);
+      lcd.print(" pts  Total:");
+      lcd.print(totalPoints);
+      
+      delay(5000);
       
     } else {
-      Serial.printf("Error weighing: %d\\n", httpResponseCode);
+      Serial.printf("ERROR: HTTP %d\n", httpResponseCode);
+      String response = http.getString();
+      Serial.println(response);
+      
+      lcd.clear();
+      lcd.print("Error!");
+      lcd.setCursor(0, 1);
+      lcd.print("Try again");
     }
     
     http.end();
-  }
-}
-
-// PASO 2: Confirmar con RFID
-void confirmWithRfid(String rfidCard) {
-  if(sessionToken == "" || WiFi.status() != WL_CONNECTED) {
-    Serial.println("No active session or no WiFi");
-    return;
-  }
-  
-  HTTPClient http;
-  http.begin(String(serverUrl) + "/confirm");
-  http.addHeader("Content-Type", "application/json");
-  
-  // Crear JSON
-  StaticJsonDocument<256> doc;
-  doc["sessionToken"] = sessionToken;
-  doc["rfidCardNumber"] = rfidCard;
-  
-  String requestBody;
-  serializeJson(doc, requestBody);
-  
-  // Enviar POST
-  int httpResponseCode = http.POST(requestBody);
-  
-  if (httpResponseCode == 200) {
-    String response = http.getString();
-    
-    // Parsear respuesta
-    StaticJsonDocument<512> responseDoc;
-    deserializeJson(responseDoc, response);
-    
-    String userName = responseDoc["userName"];
-    int pointsEarned = responseDoc["pointsEarned"];
-    int totalPoints = responseDoc["totalUserPoints"];
-    
-    Serial.printf("Success! %s earned %d points!\\n", userName.c_str(), pointsEarned);
-    Serial.printf("Total points: %d\\n", totalPoints);
-    
-    // Mostrar en LCD/Display
-    displayMessage("Welcome " + userName + "!");
-    displayMessage("+" + String(pointsEarned) + " points");
-    displayMessage("Total: " + String(totalPoints));
-    
-    // Limpiar sesión
-    sessionToken = "";
-    
   } else {
-    Serial.printf("Error confirming: %d\\n", httpResponseCode);
-    Serial.println("Please try again or contact administrator");
+    Serial.println("WiFi not connected");
   }
-  
-  http.end();
 }
 
-// Ejemplo de flujo completo
+// Loop principal
 void loop() {
-  // Cuando se detecta material en la balanza
-  if (scaleReady && weightStable) {
-    float weight = readScale();
-    String materialType = detectMaterialType(); // O selector manual
+  // 1. Esperar material en balanza
+  if (scale.is_ready()) {
+    float weight = scale.get_units(10); // Leer peso promedio
     
-    weighMaterial(weight, 1, materialType); // PASO 1
-    
-    // Esperar escaneo RFID (con timeout de 5 minutos)
-    waitingForRfid = true;
+    if (weight > 0.1) { // Material detectado
+      Serial.printf("Weight detected: %.2f kg\n", weight);
+      
+      // 2. Seleccionar tipo de material (ejemplo: botones)
+      String materialType = selectMaterialType();
+      
+      // 3. Esperar escaneo RFID
+      Serial.println("Waiting for RFID scan...");
+      lcd.clear();
+      lcd.print("Scan your RFID");
+      
+      String rfidCard = waitForRfidScan(); // Bloquea hasta leer RFID
+      
+      if (rfidCard != "") {
+        // 4. Registrar colección
+        registerCollection(rfidCard, weight, materialType);
+      }
+      
+      // 5. Resetear balanza
+      scale.tare();
+    }
   }
   
-  // Cuando se detecta tarjeta RFID
-  if (waitingForRfid && rfidDetected) {
-    String rfidCard = readRfidCard();
-    confirmWithRfid(rfidCard); // PASO 2
-    
-    waitingForRfid = false;
+  delay(100);
+}
+
+// Función helper para leer RFID
+String waitForRfidScan() {
+  unsigned long startTime = millis();
+  unsigned long timeout = 60000; // 60 segundos timeout
+  
+  while (millis() - startTime < timeout) {
+    if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+      String rfidStr = "";
+      for (byte i = 0; i < mfrc522.uid.size; i++) {
+        rfidStr += String(mfrc522.uid.uidByte[i], HEX);
+      }
+      rfidStr.toUpperCase();
+      return "RFID" + rfidStr;
+    }
+    delay(50);
   }
+  
+  return ""; // Timeout
 }
 ```
 
@@ -300,27 +303,34 @@ void loop() {
 
 ## 📊 Datos de Prueba
 
-### Tarjetas RFID Disponibles:
+### Tarjetas RFID Vinculadas a Bañistas:
 
-| RFID Card | Usuario | Email |
-|-----------|---------|-------|
-| `RFID10000000` | María López | maría.lópez0@email.com |
-| `RFID10000001` | José Pérez | josé.pérez1@email.com |
-| `RFID10000002` | Ana García | ana.garcía2@email.com |
+| RFID Card | Nombre | Email | Puntos Actuales |
+|-----------|--------|-------|-----------------|
+| `RFID10000000` | María López | maría.lópez0@email.com | Variable |
+| `RFID10000001` | José Pérez | josé.pérez1@email.com | Variable |
+| `RFID10000002` | Ana García | ana.garcía2@email.com | Variable |
+| `RFID10000003` | Carlos Rodríguez | carlos.rodríguez3@email.com | Variable |
+| ... | ... | ... | ... |
+
+**Total:** 15 tarjetas RFID activas y vinculadas
 
 ### Contenedores Disponibles:
 
-IDs: 1, 2, 3, ... (1200 contenedores en total)
+- IDs: 1 a 1200 (1200 contenedores en total)
+- Distribuidos en 5 municipalidades
+- Diferentes zonas y tipos
 
 ---
 
 ## 🔒 Seguridad
 
-- ✅ El endpoint es **público** para facilitar la integración IoT
-- ✅ Validación de tarjetas RFID (solo tarjetas activas y válidas)
-- ✅ Validación de usuarios (solo usuarios activos)
-- ✅ Validación de datos (peso positivo, tipo de material válido)
-- ✅ Todas las transacciones se registran con timestamp
+- ✅ Endpoint **público** (no requiere autenticación)
+- ✅ Validación de tarjetas RFID activas y válidas
+- ✅ Verificación de usuarios activos
+- ✅ Validación de datos de entrada
+- ✅ Todas las transacciones registradas con timestamp
+- ✅ Logging completo de operaciones
 
 ---
 
@@ -337,50 +347,50 @@ IoT Collection Service is running
 
 ---
 
-## 🚀 Flujo Completo del Sistema
+## 🧪 Prueba Manual con Curl
 
-### Secuencia de Eventos:
+### Linux/Mac:
+```bash
+curl -X POST http://localhost:8081/api/v1/iot/collections/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rfidCardNumber": "RFID10000000",
+    "weight": 5.5,
+    "collectorId": 1,
+    "recyclableType": "PLASTIC"
+  }'
+```
 
-1. **Bañista deposita material** en el contenedor IoT
-2. **Dispositivo pesa automáticamente** el material
-3. **Usuario selecciona tipo de material** (PLASTIC, METAL, etc.) o el dispositivo lo detecta
-4. **Dispositivo envía PASO 1** → `POST /api/v1/iot/collections/weigh`
-   - Backend calcula puntos
-   - Backend genera sessionToken
-   - Backend responde con puntos calculados
-5. **Dispositivo muestra en pantalla:**
-   ```
-   Peso: 5.5 kg
-   Puntos: 66
-   > PASE SU TARJETA RFID
-   ```
-6. **Bañista escanea su tarjeta RFID**
-7. **Dispositivo envía PASO 2** → `POST /api/v1/iot/collections/confirm`
-   - Backend valida RFID
-   - Backend identifica usuario
-   - Backend asigna puntos y peso al usuario
-8. **Backend actualiza:**
-   - ✅ Puntos del usuario
-   - ✅ Peso total reciclado
-   - ✅ Registro de recolección
-   - ✅ Nivel de llenado del contenedor
-   - ✅ Último uso de tarjeta RFID
-9. **Dispositivo muestra confirmación:**
-   ```
-   ¡Bienvenido María López!
-   +66 puntos
-   Total: 4507 puntos
-   ```
+### Windows PowerShell:
+```powershell
+$body = @{
+    rfidCardNumber = "RFID10000000"
+    weight = 5.5
+    collectorId = 1
+    recyclableType = "PLASTIC"
+} | ConvertTo-Json
 
-### ⏱️ Tiempo de Sesión:
-- La sesión expira en **5 minutos**
-- Si el usuario no escanea su RFID a tiempo, debe volver a pesar el material
+Invoke-RestMethod -Uri "http://localhost:8081/api/v1/iot/collections/register" `
+    -Method Post -Body $body -ContentType "application/json"
+```
+
+---
+
+## 💡 Lo Que Hace el Backend Automáticamente
+
+1. ✅ **Identifica al bañista** por su tarjeta RFID
+2. ✅ **Calcula puntos** según peso y tipo de material
+3. ✅ **Suma puntos** al total del bañista
+4. ✅ **Registra peso** en estadísticas del bañista
+5. ✅ **Guarda la recolección** en el historial
+6. ✅ **Actualiza contenedor** (nivel de llenado)
+7. ✅ **Marca uso de RFID** (timestamp de último uso)
+8. ✅ **Retorna confirmación** con datos del bañista y puntos
 
 ---
 
 ## 📞 Soporte
 
-Para más información, consulta la documentación completa en Swagger UI:
-- URL: `http://localhost:8081/swagger-ui.html`
-- Sección: **IoT Collections**
-
+- **Swagger UI:** `http://localhost:8081/swagger-ui.html`
+- **Sección:** IoT Collections
+- **Health Check:** `http://localhost:8081/api/v1/iot/collections/health`
