@@ -57,6 +57,8 @@ import java.util.Random;
 @Configuration
 @RequiredArgsConstructor
 public class DataSeeder {
+    
+    private volatile boolean seeded = false;
 
     private final UserRepository userRepository;
     private final MunicipalityRepository municipalityRepository;
@@ -78,7 +80,15 @@ public class DataSeeder {
     @Bean
     CommandLineRunner seedData() {
         return args -> {
+            if (seeded) {
+                log.info("Data already seeded, skipping...");
+                return;
+            }
+            
             try {
+                // Dar tiempo para que el contexto se inicialice completamente
+                Thread.sleep(2000);
+                
                 long userCount = userRepository.count();
                 long municipalityCount = municipalityRepository.count();
                 log.info("Current user count: {}, municipality count: {}", userCount, municipalityCount);
@@ -134,6 +144,10 @@ public class DataSeeder {
             log.info("Created {} alerts", alerts.size());
 
             log.info("Data seeding completed successfully!");
+                seeded = true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Data seeding was interrupted", e);
             } catch (Exception e) {
                 log.error("Error during data seeding: ", e);
                 e.printStackTrace();
