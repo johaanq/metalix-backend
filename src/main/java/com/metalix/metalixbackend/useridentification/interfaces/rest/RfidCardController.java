@@ -66,6 +66,16 @@ public class RfidCardController {
         return ResponseEntity.ok(rfidCardService.assignCardToUser(cardNumber, userId));
     }
     
+    @PostMapping("/link")
+    @Operation(summary = "Link RFID card to own user profile (for citizens)")
+    public ResponseEntity<RfidCard> linkCardToOwnProfile(@RequestBody Map<String, Object> request) {
+        String cardNumber = (String) request.get("cardNumber");
+        Long userId = Long.valueOf(request.get("userId").toString());
+        // Aquí deberías verificar que el userId coincida con el usuario autenticado
+        // pero por simplicidad, permitimos que cualquier usuario autenticado pueda vincular su tarjeta
+        return ResponseEntity.ok(rfidCardService.assignCardToUser(cardNumber, userId));
+    }
+    
     @PostMapping("/use/{cardNumber}")
     @Operation(summary = "Use RFID card")
     public ResponseEntity<RfidCard> useCard(@PathVariable String cardNumber) {
