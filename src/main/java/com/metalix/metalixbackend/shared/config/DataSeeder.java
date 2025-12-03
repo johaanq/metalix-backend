@@ -42,9 +42,9 @@ import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollect
 import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollectionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -77,23 +77,19 @@ public class DataSeeder {
     private final Random random = new Random();
     private final String DEFAULT_PASSWORD = "password123";
 
-    @Bean
-    CommandLineRunner seedData() {
-        return args -> {
-            if (seeded) {
-                log.info("Data already seeded, skipping...");
-                return;
-            }
+    @EventListener(ApplicationReadyEvent.class)
+    public void seedData() {
+        if (seeded) {
+            log.info("Data already seeded, skipping...");
+            return;
+        }
+        
+        try {
+            long userCount = userRepository.count();
+            long municipalityCount = municipalityRepository.count();
+            log.info("Current user count: {}, municipality count: {}", userCount, municipalityCount);
             
-            try {
-                // Dar tiempo para que el contexto se inicialice completamente
-                Thread.sleep(2000);
-                
-                long userCount = userRepository.count();
-                long municipalityCount = municipalityRepository.count();
-                log.info("Current user count: {}, municipality count: {}", userCount, municipalityCount);
-                
-                log.info("Starting data seeding...");
+            log.info("Starting data seeding...");
 
             // 1. Create Municipalities
             List<Municipality> municipalities = createMunicipalities();
@@ -144,16 +140,11 @@ public class DataSeeder {
             log.info("Created {} alerts", alerts.size());
 
             log.info("Data seeding completed successfully!");
-                seeded = true;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Data seeding was interrupted", e);
-            } catch (Exception e) {
-                log.error("Error during data seeding: ", e);
-                e.printStackTrace();
-                throw new RuntimeException("Failed to seed data", e);
-            }
-        };
+            seeded = true;
+        } catch (Exception e) {
+            log.error("Error during data seeding: ", e);
+            e.printStackTrace();
+        }
     }
 
     private List<Municipality> createMunicipalities() {
