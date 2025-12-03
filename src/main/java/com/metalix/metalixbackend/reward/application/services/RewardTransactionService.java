@@ -51,10 +51,12 @@ public class RewardTransactionService {
         User user = userService.getUserById(userId);
         Reward reward = rewardService.getRewardById(rewardId);
         
-        if (!reward.isAvailable()) {
-            throw new ValidationException("Reward is not available");
+        // Simplified validation: Only check if reward is active
+        if (!reward.getIsActive()) {
+            throw new ValidationException("Reward is not active");
         }
         
+        // Check if user has enough points
         if (user.getTotalPoints() < reward.getPointsCost()) {
             throw new ValidationException("Insufficient points");
         }
@@ -62,8 +64,10 @@ public class RewardTransactionService {
         // Deduct points from user
         user.deductPoints(reward.getPointsCost());
         
-        // Decrease reward availability
-        rewardService.decreaseAvailability(rewardId);
+        // Optionally decrease availability for tracking (but doesn't block redemption)
+        if (reward.getAvailability() != null && reward.getAvailability() > 0) {
+            reward.decreaseAvailability();
+        }
         
         // Create transaction
         RewardTransaction transaction = new RewardTransaction();

@@ -85,9 +85,7 @@ public class RewardService {
     @Transactional
     public void decreaseAvailability(Long rewardId) {
         Reward reward = getRewardById(rewardId);
-        if (!reward.isAvailable()) {
-            throw new ValidationException("Reward is not available");
-        }
+        // Simplified: No validation, just decrease if possible
         reward.decreaseAvailability();
         rewardRepository.save(reward);
     }

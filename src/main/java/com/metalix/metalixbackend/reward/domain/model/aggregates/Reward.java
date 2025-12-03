@@ -50,11 +50,13 @@ public class Reward extends BaseEntity {
     private Boolean isActive = true;
     
     public boolean isAvailable() {
-        return isActive && availability > 0 && 
-               (expirationDate == null || expirationDate.isAfter(LocalDate.now()));
+        // Simplified: Only check if reward is active
+        // No stock or expiration date validation - users can always redeem if active
+        return isActive;
     }
     
     public void decreaseAvailability() {
+        // Optional: decrease availability for tracking purposes, but don't block redemption
         if (availability > 0) {
             availability--;
         }
