@@ -31,79 +31,66 @@ public class IoTCollectionService {
     private final WasteCollectionRepository wasteCollectionRepository;
     
     /**
-     * Registrar colección desde IoT usando RFID
-     * - Valida RFID y usuario
-     * - Calcula y asigna puntos
+     * Registrar colección desde IoT usando ID de bañista
+     * - Valida usuario
+     * - Suma puntos enviados por el IoT
      * - Suma peso a estadísticas del usuario
      */
     @Transactional
     public IoTCollectionResponse registerCollection(IoTCollectionRequest request) {
-        log.info("Processing IoT collection for RFID: {}, Weight: {} kg, Type: {}", 
-                request.getRfidCardNumber(), request.getWeight(), request.getRecyclableType());
+        log.info("Processing IoT collection for User ID: {}, Weight: {} kg, Points: {}", 
+                request.getUserId(), request.getWeight(), request.getPoints());
         
-        // 1. Buscar y validar tarjeta RFID
-        RfidCard rfidCard = rfidCardRepository.findByCardNumber(request.getRfidCardNumber())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "RFID Card not found: " + request.getRfidCardNumber()));
-        
-        if (!rfidCard.isValid()) {
-            throw new ValidationException("RFID Card is not valid or expired");
-        }
-        
-        // 2. Verificar que la tarjeta esté vinculada a un usuario
-        if (rfidCard.getUserId() == null) {
-            throw new ValidationException("RFID Card is not linked to any user. Please contact administrator");
-        }
-        
-        // 3. Obtener usuario vinculado
-        User user = userRepository.findById(rfidCard.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", rfidCard.getUserId()));
+        // 1. Obtener y validar usuario (bañista)
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User (Bañista)", request.getUserId()));
         
         if (!user.getIsActive()) {
             throw new ValidationException("User account is not active");
         }
         
-        // 4. Validar contenedor
+        // 2. Validar contenedor
         WasteCollector collector = wasteCollectorRepository.findById(request.getCollectorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Waste Collector", request.getCollectorId()));
         
-        // 5. Crear recolección
+        // 3. Crear recolección
         WasteCollection collection = new WasteCollection();
         collection.setUserId(user.getId());
         collection.setCollectorId(collector.getId());
         collection.setWeight(request.getWeight());
         collection.setRecyclableType(request.getRecyclableType());
+        collection.setPoints(request.getPoints()); // Usar puntos enviados por IoT
         collection.setTimestamp(LocalDateTime.now());
         collection.setVerified(true);
-        collection.setVerificationMethod(VerificationMethod.RFID);
+        collection.setVerificationMethod(VerificationMethod.SENSOR); // Verificado por sensor IoT
         collection.setMunicipalityId(collector.getMunicipalityId());
         collection.setZoneId(collector.getZoneId());
         
-        // 6. Calcular puntos basado en peso y tipo de material
-        collection.calculatePoints();
-        
-        // 7. Guardar recolección
+        // 4. Guardar recolección
         WasteCollection savedCollection = wasteCollectionRepository.save(collection);
         log.info("Collection saved - ID: {}, Points: {}", savedCollection.getId(), savedCollection.getPoints());
         
-        // 8. Sumar puntos al usuario
+        // 5. Sumar puntos al usuario (bañista)
         int previousPoints = user.getTotalPoints();
         user.addPoints(savedCollection.getPoints());
         userRepository.save(user);
         log.info("User {} - Points: {} -> {} (+{})", 
                 user.getId(), previousPoints, user.getTotalPoints(), savedCollection.getPoints());
         
-        // 9. Actualizar último uso de tarjeta RFID
-        rfidCard.use();
-        rfidCardRepository.save(rfidCard);
+        // 6. Buscar si el usuario tiene RFID card para actualizar último uso
+        rfidCardRepository.findByUserId(user.getId()).ifPresent(rfidCard -> {
+            rfidCard.use();
+            rfidCardRepository.save(rfidCard);
+            log.info("RFID card {} marked as used", rfidCard.getCardNumber());
+        });
         
-        // 10. Actualizar nivel de llenado del contenedor
+        // 7. Actualizar nivel de llenado del contenedor
         collector.setCurrentFill(collector.getCurrentFill() + request.getWeight());
         collector.setLastCollection(LocalDateTime.now());
         wasteCollectorRepository.save(collector);
         log.info("Collector {} updated - Fill: {} kg", collector.getId(), collector.getCurrentFill());
         
-        // 11. Construir respuesta
+        // 8. Construir respuesta
         return IoTCollectionResponse.builder()
                 .collectionId(savedCollection.getId())
                 .userId(user.getId())

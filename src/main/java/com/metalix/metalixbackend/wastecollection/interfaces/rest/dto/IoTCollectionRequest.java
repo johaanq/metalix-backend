@@ -1,9 +1,9 @@
 package com.metalix.metalixbackend.wastecollection.interfaces.rest.dto;
 
 import com.metalix.metalixbackend.wastecollection.domain.model.valueobjects.RecyclableType;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class IoTCollectionRequest {
     
-    @NotBlank(message = "RFID card number is required")
-    private String rfidCardNumber;
+    @NotNull(message = "User ID (bañista) is required")
+    private Long userId;
     
     @NotNull(message = "Weight is required")
     @Positive(message = "Weight must be positive")
@@ -26,7 +26,8 @@ public class IoTCollectionRequest {
     @NotNull(message = "Recyclable type is required")
     private RecyclableType recyclableType;
     
-    // Opcional: coordenadas del IoT
-    private String coordinates;
+    @NotNull(message = "Points are required")
+    @PositiveOrZero(message = "Points must be zero or positive")
+    private Integer points;
 }
 
