@@ -161,7 +161,7 @@ public class DataSeeder {
         List<Municipality> existingMunicipalities = municipalityRepository.findAll();
         
         // Verificar si ya existen municipalidades con estos códigos
-        String[] codes = {"LIMA001", "AREQ001", "CUSC001", "TRUJ001", "CHIC001"};
+        String[] codes = {"LIMA001", "AREQ001"};
         boolean hasExisting = existingMunicipalities.stream()
                 .anyMatch(m -> java.util.Arrays.asList(codes).contains(m.getCode()));
         
@@ -170,11 +170,9 @@ public class DataSeeder {
             return existingMunicipalities;
         }
 
+        // Solo 2 municipalidades
         municipalities.add(createMunicipality("Municipalidad de Lima", "LIMA001", "Lima", 9000000, 2672.0, "contacto@munilima.gob.pe", "+51-1-315-2000"));
         municipalities.add(createMunicipality("Municipalidad de Arequipa", "AREQ001", "Arequipa", 1000000, 633.0, "contacto@muniarequipa.gob.pe", "+51-54-221-0000"));
-        municipalities.add(createMunicipality("Municipalidad de Cusco", "CUSC001", "Cusco", 500000, 385.0, "contacto@municusco.gob.pe", "+51-84-223-0000"));
-        municipalities.add(createMunicipality("Municipalidad de Trujillo", "TRUJ001", "La Libertad", 800000, 1768.0, "contacto@munitrujillo.gob.pe", "+51-44-231-0000"));
-        municipalities.add(createMunicipality("Municipalidad de Chiclayo", "CHIC001", "Lambayeque", 600000, 621.0, "contacto@municiclayo.gob.pe", "+51-74-223-0000"));
 
         try {
             return municipalityRepository.saveAll(municipalities);
@@ -204,14 +202,12 @@ public class DataSeeder {
         List<Zone> existingZones = zoneRepository.findAll();
 
         for (Municipality municipality : municipalities) {
-            String[] zoneNames = {"Centro Histórico", "Zona Norte", "Zona Sur", "Distrito Industrial", "Zona Rural"};
-            ZoneType[] zoneTypes = {ZoneType.RESIDENTIAL, ZoneType.RESIDENTIAL, ZoneType.COMMERCIAL, ZoneType.INDUSTRIAL, ZoneType.RURAL};
+            // Solo 2 zonas por municipalidad
+            String[] zoneNames = {"Centro", "Norte"};
+            ZoneType[] zoneTypes = {ZoneType.RESIDENTIAL, ZoneType.COMMERCIAL};
             String[] schedules = {
                 "Lunes, Miércoles, Viernes 6:00 AM",
-                "Martes, Jueves, Sábado 7:00 AM",
-                "Lunes a Viernes 8:00 AM",
-                "Lunes, Miércoles, Viernes 9:00 AM",
-                "Lunes y Jueves 6:00 AM"
+                "Martes, Jueves, Sábado 7:00 AM"
             };
 
             for (int i = 0; i < zoneNames.length; i++) {
@@ -261,7 +257,7 @@ public class DataSeeder {
         
         log.info("Checking existing users. Current count: {}", existingUserCount);
 
-        // System Admin
+        // 1 System Admin
         String systemAdminEmail = "admin@metalix.com";
         if (!userRepository.existsByEmail(systemAdminEmail)) {
             User systemAdmin = new User();
@@ -278,57 +274,30 @@ public class DataSeeder {
             systemAdmin.setTotalPoints(0);
             usersToCreate.add(systemAdmin);
             log.debug("Adding system admin user: {}", systemAdminEmail);
-        } else {
-            log.debug("System admin user already exists: {}", systemAdminEmail);
         }
 
-        // Municipality Admins
-        for (int i = 0; i < municipalities.size(); i++) {
-            Municipality muni = municipalities.get(i);
-            String adminEmail = "admin." + muni.getCode().toLowerCase() + "@metalix.com";
-            if (!userRepository.existsByEmail(adminEmail)) {
-                User admin = new User();
-                admin.setEmail(adminEmail);
-                admin.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
-                admin.setFirstName("Administrador");
-                admin.setLastName(muni.getName());
-                admin.setRole(Role.MUNICIPALITY_ADMIN);
-                admin.setMunicipalityId(muni.getId());
-                admin.setPhone(muni.getContactPhone());
-                admin.setAddress("Municipalidad de " + muni.getName());
-                admin.setCity(muni.getRegion());
-                admin.setIsActive(true);
-                admin.setTotalPoints(0);
-                usersToCreate.add(admin);
-                log.debug("Adding municipality admin user: {}", adminEmail);
-            } else {
-                log.debug("Municipality admin user already exists: {}", adminEmail);
-            }
-        }
+        // 4 Bañistas/Citizens
+        String[] firstNames = {"María", "José", "Ana", "Carlos"};
+        String[] lastNames = {"López", "Pérez", "García", "Rodríguez"};
 
-        // Citizens - generar emails únicos usando el índice
-        String[] firstNames = {"María", "José", "Ana", "Carlos", "Laura", "Pedro", "Carmen", "Luis", "Sofía", "Miguel"};
-        String[] lastNames = {"López", "Pérez", "García", "Rodríguez", "Martínez", "González", "Fernández", "Torres", "Ramírez", "Sánchez"};
-
-        for (int i = 0; i < 20; i++) {
-            // Generar email único usando el índice para evitar duplicados
-            String citizenEmail = firstNames[i % firstNames.length].toLowerCase() + "." + 
-                                 lastNames[i % lastNames.length].toLowerCase() + i + "@email.com";
+        for (int i = 0; i < 4; i++) {
+            String citizenEmail = firstNames[i].toLowerCase() + "." + 
+                                 lastNames[i].toLowerCase() + "@email.com";
             
             if (!userRepository.existsByEmail(citizenEmail)) {
                 User citizen = new User();
                 citizen.setEmail(citizenEmail);
                 citizen.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
-                citizen.setFirstName(firstNames[i % firstNames.length]);
-                citizen.setLastName(lastNames[i % lastNames.length]);
+                citizen.setFirstName(firstNames[i]);
+                citizen.setLastName(lastNames[i]);
                 citizen.setRole(Role.CITIZEN);
                 citizen.setMunicipalityId(municipalities.get(i % municipalities.size()).getId());
                 citizen.setPhone("+51-9" + String.format("%08d", 10000000 + i));
-                citizen.setAddress("Calle " + (i + 1) + " #" + (i * 10));
+                citizen.setAddress("Calle " + (i + 1) + " #100");
                 citizen.setCity(municipalities.get(i % municipalities.size()).getRegion());
                 citizen.setZipCode(String.format("%05d", 15000 + i));
                 citizen.setIsActive(true);
-                citizen.setTotalPoints(random.nextInt(500)); // 0-500 puntos iniciales
+                citizen.setTotalPoints(0); // Empezar en 0
                 usersToCreate.add(citizen);
             }
         }
@@ -440,9 +409,9 @@ public class DataSeeder {
                     .filter(z -> z.getMunicipalityId().equals(municipality.getId()))
                     .toList();
 
-            // Crear 3-5 contenedores por zona
+            // Crear 2 contenedores por zona
             for (Zone zone : municipalityZones) {
-                int collectorsPerZone = 3 + random.nextInt(3); // 3-5 contenedores
+                int collectorsPerZone = 2; // Solo 2 contenedores
 
                 for (int i = 0; i < collectorsPerZone; i++) {
                     WasteCollector collector = new WasteCollector();
@@ -481,8 +450,8 @@ public class DataSeeder {
         RecyclableType[] recyclableTypes = RecyclableType.values();
         VerificationMethod[] verificationMethods = VerificationMethod.values();
 
-        // Crear 50-100 colecciones
-        int numCollections = 50 + random.nextInt(51);
+        // Crear solo 10 colecciones
+        int numCollections = 10;
 
         for (int i = 0; i < numCollections; i++) {
             User user = citizens.get(random.nextInt(citizens.size()));
@@ -519,8 +488,8 @@ public class DataSeeder {
         // Crear datos de sensores para cada contenedor (últimos 30 días)
         for (WasteCollector collector : collectors) {
             if (collector.getSensorId() != null) {
-                // Crear 5-10 lecturas por contenedor
-                int readings = 5 + random.nextInt(6);
+                // Crear solo 2 lecturas por contenedor
+                int readings = 2;
                 
                 for (int i = 0; i < readings; i++) {
                     SensorData data = new SensorData();
@@ -542,18 +511,9 @@ public class DataSeeder {
     private List<Reward> createRewards(List<Municipality> municipalities) {
         List<Reward> rewards = new ArrayList<>();
 
-        // Recompensas globales (sin municipalidad específica)
+        // Solo 2 recompensas globales
         rewards.add(createReward("Descuento 10% en Supermercado", "Descuento del 10% en compras", 100, RewardCategory.DISCOUNT, null, null));
         rewards.add(createReward("Cupón de Cine", "2 entradas de cine gratis", 200, RewardCategory.VOUCHER, null, null));
-        rewards.add(createReward("Producto Ecológico", "Kit de productos ecológicos", 150, RewardCategory.PRODUCT, null, null));
-        rewards.add(createReward("Experiencia de Reciclaje", "Tour guiado a planta de reciclaje", 300, RewardCategory.EXPERIENCE, null, null));
-        rewards.add(createReward("Donación a Caridad", "Donación equivalente a ONG ambiental", 250, RewardCategory.CHARITY, null, null));
-
-        // Recompensas por municipalidad
-        for (Municipality municipality : municipalities) {
-            rewards.add(createReward("Descuento Municipal " + municipality.getName(), "Descuento en servicios municipales", 120, RewardCategory.DISCOUNT, municipality.getId(), null));
-            rewards.add(createReward("Producto Local " + municipality.getName(), "Producto de comercio local", 180, RewardCategory.PRODUCT, municipality.getId(), null));
-        }
 
         return rewardRepository.saveAll(rewards);
     }
@@ -626,9 +586,9 @@ public class DataSeeder {
                 .filter(u -> u.getRole() == Role.SYSTEM_ADMIN || u.getRole() == Role.MUNICIPALITY_ADMIN)
                 .toList();
 
-        // Reportes por municipalidad
+        // Reportes por municipalidad - solo 1 por municipalidad
         for (Municipality municipality : municipalities) {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 1; i++) {
                 Report report = new Report();
                 report.setTitle("Reporte " + reportTypes[random.nextInt(reportTypes.length)] + " - " + municipality.getName());
                 report.setType(reportTypes[random.nextInt(reportTypes.length)]);
@@ -643,8 +603,8 @@ public class DataSeeder {
             }
         }
 
-        // Reportes globales
-        for (int i = 0; i < 5; i++) {
+        // Reportes globales - solo 1
+        for (int i = 0; i < 1; i++) {
             Report report = new Report();
             report.setTitle("Reporte Global " + reportTypes[random.nextInt(reportTypes.length)]);
             report.setType(reportTypes[random.nextInt(reportTypes.length)]);
@@ -726,8 +686,8 @@ public class DataSeeder {
             alerts.add(alert);
         }
 
-        // Otras alertas
-        for (int i = 0; i < 15; i++) {
+        // Otras alertas - solo 3
+        for (int i = 0; i < 3; i++) {
             Municipality municipality = municipalities.get(random.nextInt(municipalities.size()));
             Alert alert = new Alert();
             alert.setTitle("Alerta: " + alertTypes[random.nextInt(alertTypes.length)]);

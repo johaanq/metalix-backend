@@ -25,15 +25,15 @@ public class IoTCollectionController {
     @PostMapping("/register")
     @Operation(
         summary = "Register collection from IoT device (Public endpoint)",
-        description = "Registers a waste collection using RFID card. " +
-                     "Automatically identifies user, calculates points based on weight and material type, " +
-                     "and updates user statistics."
+        description = "Registers a waste collection for a user (bañista). " +
+                     "Receives userId, weight, points, and material type. " +
+                     "Sums points and weight to user statistics."
     )
     public ResponseEntity<IoTCollectionResponse> registerCollection(
             @Valid @RequestBody IoTCollectionRequest request) {
         
-        log.info("IoT collection request - RFID: {}, Weight: {} kg, Type: {}", 
-                request.getRfidCardNumber(), request.getWeight(), request.getRecyclableType());
+        log.info("IoT collection request - UserID: {}, Weight: {} kg, Points: {}, Type: {}", 
+                request.getUserId(), request.getWeight(), request.getPoints(), request.getRecyclableType());
         
         try {
             IoTCollectionResponse response = ioTCollectionService.registerCollection(request);
