@@ -43,6 +43,7 @@ public class SecurityConfiguration {
                                 "/",
                                 "/api/v1/auth/**",
                                 "/api/v1/municipalities",
+                                "/api/v1/users/all",
                                 "/api/v1/admin/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

@@ -49,8 +49,7 @@ public class UserController {
     }
     
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
-    @Operation(summary = "Get all users without pagination")
+    @Operation(summary = "Get all users without pagination (public)")
     public ResponseEntity<List<UserResponse>> getAllUsersWithoutPagination() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users.stream()
