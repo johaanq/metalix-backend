@@ -7,18 +7,20 @@ import com.metalix.metalixbackend.shared.exception.ValidationException;
 import com.metalix.metalixbackend.useridentification.domain.model.aggregates.RfidCard;
 import com.metalix.metalixbackend.useridentification.domain.repository.RfidCardRepository;
 import com.metalix.metalixbackend.wastecollection.domain.model.aggregates.WasteCollector;
+import com.metalix.metalixbackend.wastecollection.domain.model.entities.PendingCollection;
 import com.metalix.metalixbackend.wastecollection.domain.model.entities.WasteCollection;
 import com.metalix.metalixbackend.wastecollection.domain.model.valueobjects.VerificationMethod;
+import com.metalix.metalixbackend.wastecollection.domain.repository.PendingCollectionRepository;
 import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollectionRepository;
 import com.metalix.metalixbackend.wastecollection.domain.repository.WasteCollectorRepository;
-import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.IoTCollectionRequest;
-import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.IoTCollectionResponse;
+import com.metalix.metalixbackend.wastecollection.interfaces.rest.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -29,12 +31,71 @@ public class IoTCollectionService {
     private final UserRepository userRepository;
     private final WasteCollectorRepository wasteCollectorRepository;
     private final WasteCollectionRepository wasteCollectionRepository;
+    private final PendingCollectionRepository pendingCollectionRepository;
     
+    private static final int SESSION_EXPIRATION_MINUTES = 5;
+    
+    /**
+     * PASO 1: Pesar el material y calcular puntos (sin usuario aún)
+     */
     @Transactional
-    public IoTCollectionResponse registerCollectionFromIoT(IoTCollectionRequest request) {
-        log.info("Processing IoT collection request for RFID: {}", request.getRfidCardNumber());
+    public WeighMaterialResponse weighMaterial(WeighMaterialRequest request) {
+        log.info("Step 1: Weighing material - Weight: {} kg, Type: {}", request.getWeight(), request.getRecyclableType());
         
-        // 1. Buscar y validar tarjeta RFID
+        // 1. Validar que el contenedor existe
+        WasteCollector collector = wasteCollectorRepository.findById(request.getCollectorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Waste Collector", request.getCollectorId()));
+        
+        // 2. Crear colección pendiente
+        PendingCollection pending = new PendingCollection();
+        pending.setCollectorId(collector.getId());
+        pending.setWeight(request.getWeight());
+        pending.setRecyclableType(request.getRecyclableType());
+        pending.setSessionToken(UUID.randomUUID().toString());
+        pending.setExpiresAt(LocalDateTime.now().plusMinutes(SESSION_EXPIRATION_MINUTES));
+        pending.setCompleted(false);
+        
+        // 3. Calcular puntos
+        pending.calculatePoints();
+        
+        // 4. Guardar colección pendiente
+        PendingCollection saved = pendingCollectionRepository.save(pending);
+        log.info("Pending collection created with token: {} and {} points calculated", 
+                saved.getSessionToken(), saved.getCalculatedPoints());
+        
+        // 5. Construir respuesta
+        return WeighMaterialResponse.builder()
+                .sessionToken(saved.getSessionToken())
+                .weight(saved.getWeight())
+                .recyclableType(saved.getRecyclableType().name())
+                .calculatedPoints(saved.getCalculatedPoints())
+                .message("Material weighed successfully. " + saved.getCalculatedPoints() + 
+                        " points ready to be assigned. Please scan your RFID card.")
+                .expiresInSeconds(SESSION_EXPIRATION_MINUTES * 60)
+                .build();
+    }
+    
+    /**
+     * PASO 2: Confirmar con RFID y asignar puntos al usuario
+     */
+    @Transactional
+    public IoTCollectionResponse confirmWithRfid(ConfirmWithRfidRequest request) {
+        log.info("Step 2: Confirming with RFID: {}", request.getRfidCardNumber());
+        
+        // 1. Buscar colección pendiente
+        PendingCollection pending = pendingCollectionRepository.findBySessionToken(request.getSessionToken())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Pending collection not found or expired. Session: " + request.getSessionToken()));
+        
+        if (pending.getCompleted()) {
+            throw new ValidationException("This collection has already been completed");
+        }
+        
+        if (pending.isExpired()) {
+            throw new ValidationException("Session expired. Please weigh the material again");
+        }
+        
+        // 2. Buscar y validar tarjeta RFID
         RfidCard rfidCard = rfidCardRepository.findByCardNumber(request.getRfidCardNumber())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "RFID Card not found: " + request.getRfidCardNumber()));
@@ -43,12 +104,12 @@ public class IoTCollectionService {
             throw new ValidationException("RFID Card is not valid or expired");
         }
         
-        // 2. Verificar que la tarjeta esté vinculada a un usuario
+        // 3. Verificar que la tarjeta esté vinculada a un usuario
         if (rfidCard.getUserId() == null) {
-            throw new ValidationException("RFID Card is not linked to any user");
+            throw new ValidationException("RFID Card is not linked to any user. Please contact an administrator");
         }
         
-        // 3. Obtener usuario
+        // 4. Obtener usuario
         User user = userRepository.findById(rfidCard.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", rfidCard.getUserId()));
         
@@ -56,24 +117,22 @@ public class IoTCollectionService {
             throw new ValidationException("User account is not active");
         }
         
-        // 4. Validar contenedor
-        WasteCollector collector = wasteCollectorRepository.findById(request.getCollectorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Waste Collector", request.getCollectorId()));
+        // 5. Obtener contenedor
+        WasteCollector collector = wasteCollectorRepository.findById(pending.getCollectorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Waste Collector", pending.getCollectorId()));
         
-        // 5. Crear recolección
+        // 6. Crear recolección definitiva
         WasteCollection collection = new WasteCollection();
         collection.setUserId(user.getId());
         collection.setCollectorId(collector.getId());
-        collection.setWeight(request.getWeight());
-        collection.setRecyclableType(request.getRecyclableType());
-        collection.setTimestamp(LocalDateTime.now());
-        collection.setVerified(true); // Verificado automáticamente por IoT
+        collection.setWeight(pending.getWeight());
+        collection.setRecyclableType(pending.getRecyclableType());
+        collection.setPoints(pending.getCalculatedPoints());
+        collection.setTimestamp(pending.getTimestamp());
+        collection.setVerified(true);
         collection.setVerificationMethod(VerificationMethod.RFID);
         collection.setMunicipalityId(collector.getMunicipalityId());
         collection.setZoneId(collector.getZoneId());
-        
-        // 6. Calcular puntos
-        collection.calculatePoints();
         
         // 7. Guardar recolección
         WasteCollection savedCollection = wasteCollectionRepository.save(collection);
@@ -89,11 +148,15 @@ public class IoTCollectionService {
         rfidCardRepository.save(rfidCard);
         
         // 10. Actualizar contenedor
-        collector.setCurrentFill(collector.getCurrentFill() + request.getWeight());
+        collector.setCurrentFill(collector.getCurrentFill() + pending.getWeight());
         collector.setLastCollection(LocalDateTime.now());
         wasteCollectorRepository.save(collector);
         
-        // 11. Construir respuesta
+        // 11. Marcar colección pendiente como completada
+        pending.setCompleted(true);
+        pendingCollectionRepository.save(pending);
+        
+        // 12. Construir respuesta
         return IoTCollectionResponse.builder()
                 .collectionId(savedCollection.getId())
                 .userId(user.getId())
@@ -105,8 +168,19 @@ public class IoTCollectionService {
                 .recyclableType(savedCollection.getRecyclableType().name())
                 .timestamp(savedCollection.getTimestamp())
                 .success(true)
-                .message("Collection registered successfully! " + savedCollection.getPoints() + " points awarded.")
+                .message("Collection completed successfully! " + savedCollection.getPoints() + 
+                        " points awarded to " + user.getFirstName() + " " + user.getLastName())
                 .build();
+    }
+    
+    /**
+     * Limpiar colecciones pendientes expiradas
+     */
+    @Transactional
+    public void cleanupExpiredPendingCollections() {
+        LocalDateTime now = LocalDateTime.now();
+        pendingCollectionRepository.deleteByExpiresAtBeforeAndCompletedFalse(now);
+        log.info("Cleaned up expired pending collections");
     }
 }
 
