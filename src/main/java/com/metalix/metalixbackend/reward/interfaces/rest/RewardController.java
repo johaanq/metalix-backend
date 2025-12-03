@@ -48,12 +48,6 @@ public class RewardController {
         return ResponseEntity.ok(rewardService.getRewardsByMunicipality(municipalityId));
     }
     
-    @GetMapping("/affordable/{maxPoints}")
-    @Operation(summary = "Get affordable rewards for user")
-    public ResponseEntity<List<Reward>> getAffordableRewards(@PathVariable Integer maxPoints) {
-        return ResponseEntity.ok(rewardService.getAffordableRewards(maxPoints));
-    }
-    
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Create reward")

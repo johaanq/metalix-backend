@@ -84,12 +84,17 @@ public class DataSeeder {
             return;
         }
         
-        try {
-            long userCount = userRepository.count();
-            long municipalityCount = municipalityRepository.count();
-            log.info("Current user count: {}, municipality count: {}", userCount, municipalityCount);
-            
-            log.info("Starting data seeding...");
+        // Ejecutar en un hilo separado para no bloquear el inicio de la aplicación
+        new Thread(() -> {
+            try {
+                // Esperar a que todo esté listo
+                Thread.sleep(3000);
+                
+                long userCount = userRepository.count();
+                long municipalityCount = municipalityRepository.count();
+                log.info("Current user count: {}, municipality count: {}", userCount, municipalityCount);
+                
+                log.info("Starting data seeding...");
 
             // 1. Create Municipalities
             List<Municipality> municipalities = createMunicipalities();
@@ -139,12 +144,16 @@ public class DataSeeder {
             List<Alert> alerts = createAlerts(municipalities, collectors);
             log.info("Created {} alerts", alerts.size());
 
-            log.info("Data seeding completed successfully!");
-            seeded = true;
-        } catch (Exception e) {
-            log.error("Error during data seeding: ", e);
-            e.printStackTrace();
-        }
+                log.info("Data seeding completed successfully!");
+                seeded = true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Data seeding was interrupted");
+            } catch (Exception e) {
+                log.error("Error during data seeding: ", e);
+                log.info("Continuing despite seeding errors...");
+            }
+        }).start();
     }
 
     private List<Municipality> createMunicipalities() {

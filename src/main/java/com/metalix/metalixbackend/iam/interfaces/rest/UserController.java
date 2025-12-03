@@ -48,15 +48,6 @@ public class UserController {
         return ResponseEntity.ok(users.map(UserResponse::fromEntity));
     }
     
-    @GetMapping("/all")
-    @Operation(summary = "Get all users without pagination (public)")
-    public ResponseEntity<List<UserResponse>> getAllUsersWithoutPagination() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users.stream()
-                .map(UserResponse::fromEntity)
-                .collect(Collectors.toList()));
-    }
-    
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {

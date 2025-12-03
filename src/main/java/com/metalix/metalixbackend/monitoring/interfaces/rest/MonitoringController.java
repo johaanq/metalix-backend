@@ -62,12 +62,6 @@ public class MonitoringController {
         return ResponseEntity.ok(monitoringService.getAllMetrics());
     }
     
-    @GetMapping("/metrics/{id}")
-    @Operation(summary = "Get metric by ID")
-    public ResponseEntity<Metric> getMetricById(@PathVariable Long id) {
-        return ResponseEntity.ok(monitoringService.getMetricById(id));
-    }
-    
     @GetMapping("/metrics/municipality/{municipalityId}")
     @Operation(summary = "Get metrics by municipality")
     public ResponseEntity<List<Metric>> getMetricsByMunicipality(@PathVariable Long municipalityId) {
@@ -89,12 +83,6 @@ public class MonitoringController {
         return ResponseEntity.ok(monitoringService.getAllAlerts());
     }
     
-    @GetMapping("/alerts/{id}")
-    @Operation(summary = "Get alert by ID")
-    public ResponseEntity<Alert> getAlertById(@PathVariable Long id) {
-        return ResponseEntity.ok(monitoringService.getAlertById(id));
-    }
-    
     @GetMapping("/alerts/municipality/{municipalityId}")
     @Operation(summary = "Get alerts by municipality")
     public ResponseEntity<List<Alert>> getAlertsByMunicipality(@PathVariable Long municipalityId) {
@@ -113,12 +101,6 @@ public class MonitoringController {
     public ResponseEntity<Alert> createAlert(@Valid @RequestBody Alert alert) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(monitoringService.createAlert(alert));
-    }
-    
-    @PatchMapping("/alerts/{id}/read")
-    @Operation(summary = "Mark alert as read")
-    public ResponseEntity<Alert> markAlertAsRead(@PathVariable Long id) {
-        return ResponseEntity.ok(monitoringService.markAlertAsRead(id));
     }
     
     @PatchMapping("/alerts/{id}")

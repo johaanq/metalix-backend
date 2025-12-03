@@ -31,12 +31,6 @@ public class RewardTransactionController {
         return ResponseEntity.ok(transactionService.getAllTransactions());
     }
     
-    @GetMapping("/{id}")
-    @Operation(summary = "Get transaction by ID")
-    public ResponseEntity<RewardTransaction> getTransactionById(@PathVariable Long id) {
-        return ResponseEntity.ok(transactionService.getTransactionById(id));
-    }
-    
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get transactions by user")
     public ResponseEntity<Page<RewardTransaction>> getTransactionsByUser(
@@ -54,14 +48,6 @@ public class RewardTransactionController {
         Long userId = request.get("userId");
         Long rewardId = request.get("rewardId");
         return ResponseEntity.ok(transactionService.redeemReward(userId, rewardId));
-    }
-    
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    @Operation(summary = "Delete transaction")
-    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
-        transactionService.deleteTransaction(id);
-        return ResponseEntity.noContent().build();
     }
 }
 

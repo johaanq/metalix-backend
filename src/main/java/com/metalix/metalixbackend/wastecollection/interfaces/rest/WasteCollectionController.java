@@ -65,21 +65,5 @@ public class WasteCollectionController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(wasteCollectionService.createCollection(collection));
     }
-    
-    @PutMapping("/{id}")
-    @Operation(summary = "Update waste collection")
-    public ResponseEntity<WasteCollection> updateCollection(
-            @PathVariable Long id,
-            @RequestBody WasteCollection collection
-    ) {
-        return ResponseEntity.ok(wasteCollectionService.updateCollection(id, collection));
-    }
-    
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete waste collection")
-    public ResponseEntity<Void> deleteCollection(@PathVariable Long id) {
-        wasteCollectionService.deleteCollection(id);
-        return ResponseEntity.noContent().build();
-    }
 }
 

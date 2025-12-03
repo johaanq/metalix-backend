@@ -31,18 +31,6 @@ public class RfidCardController {
         return ResponseEntity.ok(rfidCardService.getAllCards());
     }
     
-    @GetMapping("/{id}")
-    @Operation(summary = "Get RFID card by ID")
-    public ResponseEntity<RfidCard> getCardById(@PathVariable Long id) {
-        return ResponseEntity.ok(rfidCardService.getCardById(id));
-    }
-    
-    @GetMapping("/number/{cardNumber}")
-    @Operation(summary = "Get RFID card by card number")
-    public ResponseEntity<RfidCard> getCardByNumber(@PathVariable String cardNumber) {
-        return ResponseEntity.ok(rfidCardService.getCardByNumber(cardNumber));
-    }
-    
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get RFID card by user ID")
     public ResponseEntity<RfidCard> getCardByUserId(@PathVariable Long userId) {
@@ -82,29 +70,11 @@ public class RfidCardController {
         return ResponseEntity.ok(rfidCardService.useCard(cardNumber));
     }
     
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
-    @Operation(summary = "Update RFID card")
-    public ResponseEntity<RfidCard> updateCard(
-            @PathVariable Long id,
-            @RequestBody RfidCard card
-    ) {
-        return ResponseEntity.ok(rfidCardService.updateCard(id, card));
-    }
-    
     @PatchMapping("/{id}/block")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'MUNICIPALITY_ADMIN')")
     @Operation(summary = "Block RFID card")
     public ResponseEntity<RfidCard> blockCard(@PathVariable Long id) {
         return ResponseEntity.ok(rfidCardService.blockCard(id));
-    }
-    
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    @Operation(summary = "Delete RFID card")
-    public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
-        rfidCardService.deleteCard(id);
-        return ResponseEntity.noContent().build();
     }
 }
 

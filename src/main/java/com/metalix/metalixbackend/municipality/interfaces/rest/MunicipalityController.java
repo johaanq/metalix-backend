@@ -41,13 +41,6 @@ public class MunicipalityController {
         return ResponseEntity.ok(MunicipalityResponse.fromEntity(municipality));
     }
     
-    @GetMapping("/code/{code}")
-    @Operation(summary = "Get municipality by code")
-    public ResponseEntity<MunicipalityResponse> getMunicipalityByCode(@PathVariable String code) {
-        Municipality municipality = municipalityService.getMunicipalityByCode(code);
-        return ResponseEntity.ok(MunicipalityResponse.fromEntity(municipality));
-    }
-    
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
