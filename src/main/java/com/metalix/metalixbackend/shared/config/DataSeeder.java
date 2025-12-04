@@ -276,6 +276,27 @@ public class DataSeeder {
             log.debug("Adding system admin user: {}", systemAdminEmail);
         }
 
+        // 2 Municipality Admins (uno por cada municipalidad)
+        for (Municipality muni : municipalities) {
+            String adminEmail = "admin." + muni.getCode().toLowerCase() + "@metalix.com";
+            if (!userRepository.existsByEmail(adminEmail)) {
+                User admin = new User();
+                admin.setEmail(adminEmail);
+                admin.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+                admin.setFirstName("Admin");
+                admin.setLastName(muni.getName());
+                admin.setRole(Role.MUNICIPALITY_ADMIN);
+                admin.setMunicipalityId(muni.getId());
+                admin.setPhone(muni.getContactPhone());
+                admin.setAddress("Municipalidad " + muni.getName());
+                admin.setCity(muni.getRegion());
+                admin.setIsActive(true);
+                admin.setTotalPoints(0);
+                usersToCreate.add(admin);
+                log.debug("Adding municipality admin user: {}", adminEmail);
+            }
+        }
+
         // 4 Bañistas/Citizens
         String[] firstNames = {"María", "José", "Ana", "Carlos"};
         String[] lastNames = {"López", "Pérez", "García", "Rodríguez"};
