@@ -48,6 +48,8 @@ public class SecurityConfiguration {
                                 "/api/v1/iot/**",
                                 "/api/v1/waste-collectors",
                                 "/api/v1/waste-collectors/**",
+                                "/api/v1/sensor-data",
+                                "/api/v1/sensor-data/**",
                                 "/api/v1/admin/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
