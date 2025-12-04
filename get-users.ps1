@@ -24,3 +24,4 @@ $users | Where-Object {$_.role -eq 'CITIZEN'} | ForEach-Object {
     Write-Host "  ID: $($_.id) - $($_.firstName) $($_.lastName) - RFID: $($_.rfidCard)" -ForegroundColor Cyan
 }
 
+

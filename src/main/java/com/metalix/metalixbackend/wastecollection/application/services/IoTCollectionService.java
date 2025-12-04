@@ -4,7 +4,6 @@ import com.metalix.metalixbackend.iam.domain.model.aggregates.User;
 import com.metalix.metalixbackend.iam.domain.repository.UserRepository;
 import com.metalix.metalixbackend.shared.exception.ResourceNotFoundException;
 import com.metalix.metalixbackend.shared.exception.ValidationException;
-import com.metalix.metalixbackend.useridentification.domain.model.aggregates.RfidCard;
 import com.metalix.metalixbackend.useridentification.domain.repository.RfidCardRepository;
 import com.metalix.metalixbackend.wastecollection.domain.model.aggregates.WasteCollector;
 import com.metalix.metalixbackend.wastecollection.domain.model.entities.WasteCollection;
@@ -78,11 +77,16 @@ public class IoTCollectionService {
                 user.getId(), previousPoints, user.getTotalPoints(), savedCollection.getPoints());
         
         // 6. Buscar si el usuario tiene RFID card para actualizar último uso
-        rfidCardRepository.findByUserId(user.getId()).ifPresent(rfidCard -> {
-            rfidCard.use();
-            rfidCardRepository.save(rfidCard);
-            log.info("RFID card {} marked as used", rfidCard.getCardNumber());
-        });
+        try {
+            rfidCardRepository.findByUserId(user.getId()).ifPresent(rfidCard -> {
+                rfidCard.use();
+                rfidCardRepository.save(rfidCard);
+                log.info("RFID card {} marked as used", rfidCard.getCardNumber());
+            });
+        } catch (Exception e) {
+            // Ignorar si hay múltiples tarjetas o error al buscar
+            log.warn("Could not update RFID card for user {}: {}", user.getId(), e.getMessage());
+        }
         
         // 7. Actualizar nivel de llenado del contenedor
         collector.setCurrentFill(collector.getCurrentFill() + request.getWeight());
